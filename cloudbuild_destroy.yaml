@@ -27,5 +27,5 @@ substitutions:
   _PROJECT_ID: '${PROJECT_ID}'
   _LOCATION: 'europe-west1'
   _REPOSITORY_ID: 'my-docker-repo'
-  _IMAGE_NAME: 'graphrag-fn-query_engine'
+  _IMAGE_NAME: 'graphrag-fn-query-engine'
   _PROJECT_SUFFIX: '' # This will be overridden by the trigger

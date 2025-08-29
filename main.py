@@ -105,7 +105,8 @@ def query_engine(request):
         RETURN c.id AS community_id, c.summary AS summary, c.embedding AS embedding
         """
         
-        with spanner_database.snapshot() as snapshot:
+        graph = spanner_database.graph('my-graph')
+        with graph.snapshot() as snapshot:
             results = snapshot.execute_sql(gql_query)
             communities_data = []
             for row in results:
