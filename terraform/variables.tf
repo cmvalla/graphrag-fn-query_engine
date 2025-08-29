@@ -43,25 +43,14 @@ variable "query_engine_sa_email" {
   type        = string
 }
 
-variable "memgraph_host" {
-  description = "Memgraph host for the query engine."
+variable "spanner_instance_id" {
+  description = "Cloud Spanner instance ID for the query engine."
   type        = string
 }
 
-variable "memgraph_port" {
-  description = "Memgraph port for the query engine."
-  type        = number
-}
-
-variable "memgraph_user" {
-  description = "Memgraph username for the query engine."
+variable "spanner_database_id" {
+  description = "Cloud Spanner database ID for the query engine."
   type        = string
-}
-
-variable "memgraph_password" {
-  description = "Memgraph password for the query engine."
-  type        = string
-  sensitive   = true
 }
 
 variable "vpc_connector" {

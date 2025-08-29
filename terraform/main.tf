@@ -17,20 +17,12 @@ resource "google_cloud_run_v2_service" "query_engine_fn" {
         value = var.project_id
       }
       env {
-        name  = "MEMGRAPH_HOST"
-        value = var.memgraph_host
+        name  = "SPANNER_INSTANCE_ID"
+        value = var.spanner_instance_id
       }
       env {
-        name  = "MEMGRAPH_PORT"
-        value = var.memgraph_port
-      }
-      env {
-        name  = "MEMGRAPH_USER"
-        value = var.memgraph_user
-      }
-      env {
-        name  = "MEMGRAPH_PASSWORD"
-        value = var.memgraph_password
+        name  = "SPANNER_DATABASE_ID"
+        value = var.spanner_database_id
       }
       env {
         name  = "LOCATION"
