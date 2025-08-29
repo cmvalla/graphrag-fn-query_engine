@@ -1,0 +1,7 @@
+functions-framework==3.*
+google-cloud-logging==3.12.1
+langchain-community==0.3.27
+langchain-google-vertexai==2.0.28
+langchain==0.3.27
+langchain-core==0.3.74
+scikit-learn==1.5.0 # Added for cosine_similarity
