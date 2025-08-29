@@ -1,0 +1,31 @@
+steps:
+# Download the terraform.tfvars from Secret Manager
+- name: 'gcr.io/${_PROJECT_ID}/my-docker-repo/gcp-terraform-build:latest'
+  id: download-tfvars
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud secrets versions access latest --secret="consolidator-tfvars" --project="${_PROJECT_ID}" > terraform/terraform.tfvars
+
+
+# Run Terraform to destroy the function and its resources
+- name: 'gcr.io/${_PROJECT_ID}/my-docker-repo/gcp-terraform-build:latest'
+  id: terraform-destroy
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    cd terraform
+    terraform init -backend-config="prefix=cloud-spanner-demo/${_PROJECT_SUFFIX}/consolidator"
+    terraform destroy -auto-approve -var="image_tag=$BUILD_ID"
+  waitFor: ['download-tfvars']
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _PROJECT_ID: '${PROJECT_ID}'
+  _LOCATION: 'europe-west1'
+  _REPOSITORY_ID: 'my-docker-repo'
+  _IMAGE_NAME: 'graphrag-fn-consolidator'
+  _PROJECT_SUFFIX: '' # This will be overridden by the trigger
