@@ -28,6 +28,10 @@ resource "google_cloud_run_v2_service" "query_engine_fn" {
         name  = "LOCATION"
         value = var.gcp_region
       }
+      env {
+        name  = "EMBEDDING_SERVICE_URL"
+        value = data.google_cloud_run_v2_service.embedding_service.uri
+      }
     }
   }
 
@@ -35,4 +39,12 @@ resource "google_cloud_run_v2_service" "query_engine_fn" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
+  depends_on = [
+    data.google_cloud_run_v2_service.embedding_service
+  ]
+}
+
+data "google_cloud_run_v2_service" "embedding_service" {
+  name     = "graphrag-embedding"
+  location = var.gcp_region
 }
