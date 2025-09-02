@@ -100,67 +100,98 @@ def query_engine(request):
         # Assuming nodes (e.g., 'Community') have 'summary' and 'embedding' properties
         # and that 'embedding' is stored as an ARRAY<FLOAT64>
         # Example GQL query (adjust table/column names as per your Spanner Graph schema)
+        # Fetch all entities (including Class, Instance, and Community) and their embeddings
         gql_query = """
-        MATCH (c:Community)
-        RETURN c.id AS community_id, c.summary AS summary, c.embedding AS embedding
+        MATCH (n)
+        RETURN n.id AS id, n.type AS type, n.properties AS properties, n.embedding AS embedding
         """
         
-        graph = spanner_database.graph('my-graph')
+        graph = spanner_database.graph('my_graph') # Confirmed graph name from spanner.tf
         with graph.snapshot() as snapshot:
             results = snapshot.execute_sql(gql_query)
-            communities_data = []
+            all_entities_data = []
             for row in results:
-                communities_data.append({
-                    "community_id": row[0],
-                    "summary": row[1],
-                    "embedding": list(row[2]) # Convert Spanner ARRAY to Python list
+                entity_id = row[0]
+                entity_type = row[1]
+                entity_properties = json.loads(row[2]) if row[2] else {} # Properties are JSON
+                entity_embedding = list(row[3]) if row[3] else None # Embedding is ARRAY<FLOAT64>
+                
+                all_entities_data.append({
+                    "id": entity_id,
+                    "type": entity_type,
+                    "properties": entity_properties,
+                    "embedding": entity_embedding
                 })
 
-        # 3. Perform similarity search to find top N relevant communities
-        # Calculate cosine similarity between query embedding and community embeddings
+        # 3. Perform similarity search to find top N relevant entities (Class, Instance, Community)
+        # Calculate cosine similarity between query embedding and entity embeddings
         from sklearn.metrics.pairwise import cosine_similarity # This will require adding sklearn to requirements.txt
         
-        # Filter out communities without embeddings or with non-list embeddings
-        valid_communities = []
-        for comm in communities_data:
-            if comm.get("embedding") and isinstance(comm["embedding"], list):
-                valid_communities.append(comm)
+        # Filter out entities without embeddings or with non-list embeddings
+        valid_entities = []
+        for entity in all_entities_data:
+            if entity.get("embedding") and isinstance(entity["embedding"], list):
+                valid_entities.append(entity)
             else:
-                logging.warning(f"Community {comm.get('community_id')} has invalid or missing embedding: {comm.get('embedding')}")
+                logging.warning(f"Entity {entity.get('id')} has invalid or missing embedding: {entity.get('embedding')}")
 
-        if not valid_communities:
-            logging.warning("No valid community embeddings found for similarity search. Proceeding with all summaries.")
-            # Fallback to using all summaries if no valid embeddings are found
-            top_n_communities = communities_data
-        else:
-            community_embeddings = [comm["embedding"] for comm in valid_communities]
+        if not valid_entities:
+            logging.warning("No valid entity embeddings found for similarity search. Cannot perform semantic search.")
+            return "No relevant information found.", 200 # Or handle as appropriate
+
+        entity_embeddings = [entity["embedding"] for entity in valid_entities]
+        
+        # Reshape query_embedding for cosine_similarity
+        query_embedding_reshaped = [query_embedding]
             
-            # Reshape query_embedding for cosine_similarity
-            query_embedding_reshaped = [query_embedding]
-            
-            similarities = cosine_similarity(query_embedding_reshaped, community_embeddings)[0]
+        similarities = cosine_similarity(query_embedding_reshaped, entity_embeddings)[0]
 
-            # Get top N communities based on similarity
-            top_n = 5 # Define top N communities to consider
-            top_n_indices = similarities.argsort()[-top_n:][::-1]
-            top_n_communities = [valid_communities[i] for i in top_n_indices]
-            
-            logging.info(f"Top {top_n} communities for query '{query}': {[comm['community_id'] for comm in top_n_communities]}")
+        # Get top N entities based on similarity
+        top_n = 5 # Define top N entities to consider
+        top_n_indices = similarities.argsort()[-top_n:][::-1]
+        top_n_entities = [valid_entities[i] for i in top_n_indices]
+        
+        logging.info(f"Top {top_n} entities for query '{query}': {[entity['id'] for entity in top_n_entities]}")
 
 
-        # 4. Generate partial answers for top N relevant communities
+        # 4. Generate partial answers for top N relevant entities
         partial_answers = []
-        for record in top_n_communities:
-            community_id = record["community_id"]
-            summary = record["summary"]
+        for entity in top_n_entities:
+            entity_id = entity["id"]
+            entity_type = entity["type"]
+            entity_properties = entity["properties"]
+            
+            summary = ""
+            if entity_type == "Community" or entity_type == "Class":
+                summary = entity_properties.get("summary", "")
+                if not summary:
+                    logging.warning(f"Entity {entity_id} of type {entity_type} has no 'summary' property. Using full properties.")
+                    summary = json.dumps(entity_properties)
+            elif entity_type == "Instance":
+                summary = entity_properties.get("name", entity_properties.get("description", ""))
+                if not summary:
+                    logging.warning(f"Entity {entity_id} of type {entity_type} has no 'name' or 'description' property. Using full properties.")
+                    summary = json.dumps(entity_properties)
+            else:
+                logging.warning(f"Unknown entity type {entity_type} for entity {entity_id}. Using full properties.")
+                summary = json.dumps(entity_properties)
+
+            if not summary:
+                logging.warning(f"No meaningful summary could be extracted for entity {entity_id}. Skipping partial answer generation for this entity.")
+                continue
+
             prompt = PARTIAL_ANSWER_PROMPT.format(query=query, summary=summary)
             partial_answer = llm.invoke(prompt)
             partial_answers.append(partial_answer)
 
-        # 3. Generate final answer
+        # 5. Generate final answer
+        if not partial_answers:
+            logging.warning("No partial answers generated. Returning default response.")
+            return "No relevant information found to answer your query.", 200
+
         partial_answers_str = "\n".join(partial_answers)
         prompt = FINAL_ANSWER_PROMPT.format(query=query, partial_answers=partial_answers_str)
-        final_answer = llm.invoke(prompt)
+        final_answer = llm.invoke(final_answer)
 
         return final_answer, 200
 
