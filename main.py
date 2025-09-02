@@ -191,7 +191,7 @@ def query_engine(request):
 
         partial_answers_str = "\n".join(partial_answers)
         prompt = FINAL_ANSWER_PROMPT.format(query=query, partial_answers=partial_answers_str)
-        final_answer = llm.invoke(final_answer)
+        final_answer = llm.invoke(prompt)
 
         return final_answer, 200
 
