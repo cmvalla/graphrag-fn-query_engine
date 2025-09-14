@@ -225,8 +225,7 @@ def query_engine():
         # 5. Generate final answer
         if not partial_answers:
             logging.warning("No partial answers generated. Returning default response.")
-            return jsonify({"message": "No relevant information found to answer your query.
-"}), 200
+            return jsonify({"message": "No relevant information found to answer your query.\n"}), 200
 
         partial_answers_str = "\n".join(partial_answers)
         prompt = FINAL_ANSWER_PROMPT.format(query=query, partial_answers=partial_answers_str)
