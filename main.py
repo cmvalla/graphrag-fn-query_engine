@@ -20,6 +20,8 @@ logging.basicConfig(level=logging.INFO)
 llm = None
 spanner_database = None
 
+initialize_clients() # Moved initialization here
+
 def get_query_embedding(query: str):
     """Generates an embedding for a given query by calling the graphrag-embedding service."""
     embedding_service_url = os.environ.get("EMBEDDING_SERVICE_URL")
