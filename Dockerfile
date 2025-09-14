@@ -19,4 +19,4 @@ EXPOSE 8080
 
 # Define the command to run the application using gunicorn
 # The Flask app instance is named 'app' in main.py
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "main:query_engine"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "main:app"]
