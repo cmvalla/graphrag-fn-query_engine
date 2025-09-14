@@ -23,35 +23,7 @@ app = Flask(__name__)
 llm = None
 spanner_database = None
 
-def initialize_clients():
-    """Initializes all external clients."""
-    global llm, spanner_database
 
-    try:
-        logging.info("Initializing global clients...")
-
-        # --- Environment Variables ---
-        GCP_PROJECT = os.environ.get("GCP_PROJECT")
-        SPANNER_INSTANCE_ID = os.environ.get("SPANNER_INSTANCE_ID")
-        SPANNER_DATABASE_ID = os.environ.get("SPANNER_DATABASE_ID")
-        LOCATION = os.environ.get("LOCATION")
-
-        logging.info("Initializing Cloud Spanner client...")
-        spanner_client = spanner.Client(project=GCP_PROJECT)
-        instance = spanner_client.instance(SPANNER_INSTANCE_ID)
-        spanner_database = instance.database(SPANNER_DATABASE_ID)
-        logging.info("Cloud Spanner client initialized successfully.")
-
-        logging.info("Initializing Vertex AI...")
-        llm = VertexAI(model_name="gemini-2.5-flash", location=LOCATION)
-        logging.info("Vertex AI LLM client initialized successfully.")
-
-        logging.info("All global clients initialized successfully.")
-    except Exception as e:
-        logging.critical(f'FATAL: Failed to initialize one or more global clients: {e}', exc_info=True)
-        raise  # Re-raise the exception to halt execution if initialization fails
-
-initialize_clients() # Moved initialization here
 
 def get_query_embedding(query: str):
     """Generates an embedding for a given query by calling the graphrag-embedding service."""
@@ -86,6 +58,7 @@ def get_query_embedding(query: str):
         logging.error(f"Error calling embedding service for query {query}: {e}")
         return None
 
+@app.before_first_request
 def initialize_clients():
     """Initializes all external clients."""
     global llm, spanner_database
@@ -148,7 +121,7 @@ def query_engine():
     Answers a global sensemaking query using the community summaries from Spanner Graph.
     """
     try:
-        initialize_clients()
+
 
         request_json = request.get_json(silent=True)
         if not request_json or "query" not in request_json:
