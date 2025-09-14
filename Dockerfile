@@ -9,10 +9,7 @@ COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 # This command runs in a separate layer and will be cached
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Explicitly set PYTHONPATH to include site-packages
-ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages:/app
+RUN pip install --no-cache-dir -r requirements.txt --target /app
 
 # Copy the rest of the application code
 COPY . .
