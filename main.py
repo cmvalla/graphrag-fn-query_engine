@@ -58,7 +58,6 @@ def get_query_embedding(query: str):
         logging.error(f"Error calling embedding service for query {query}: {e}")
         return None
 
-@app.before_first_request
 def initialize_clients():
     """Initializes all external clients."""
     global llm, spanner_database
@@ -86,6 +85,8 @@ def initialize_clients():
     except Exception as e:
         logging.critical(f'FATAL: Failed to initialize one or more global clients: {e}', exc_info=True)
         raise  # Re-raise the exception to halt execution if initialization fails
+
+initialize_clients()
 
 # --- Prompt Templates ---
 PARTIAL_ANSWER_PROMPT = PromptTemplate(
