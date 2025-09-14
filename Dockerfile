@@ -10,6 +10,7 @@ COPY requirements.txt .
 # Install any needed packages specified in requirements.txt
 # This command runs in a separate layer and will be cached
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip show google-cloud-spanner
 
 # Copy the rest of the application code
 COPY . .
