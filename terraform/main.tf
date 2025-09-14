@@ -47,4 +47,5 @@ resource "google_cloud_run_v2_service" "query_engine_fn" {
 data "google_cloud_run_v2_service" "embedding_service" {
   name     = "graphrag-embedding"
   location = var.gcp_region
+  project  = var.project_id
 }
