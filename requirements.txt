@@ -4,3 +4,5 @@ langchain-google-vertexai
 requests
 scikit-learn
 google-cloud-logging
+langchain
+langchain-core
