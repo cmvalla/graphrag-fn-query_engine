@@ -4,8 +4,10 @@ import functions_framework
 import google.cloud.logging
 import logging
 from google.cloud import spanner
-from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
+from langchain_google_vertexai import VertexAI
 from langchain.prompts import PromptTemplate
+import requests
+import time
 
 # --- Boilerplate and Configuration ---
 
@@ -17,11 +19,43 @@ logging.basicConfig(level=logging.INFO)
 # --- Global Clients (initialized within the function) ---
 llm = None
 spanner_database = None
-embedding_model = None # New global variable for embedding model
+
+def get_query_embedding(query: str):
+    """Generates an embedding for a given query by calling the graphrag-embedding service."""
+    embedding_service_url = os.environ.get("EMBEDDING_SERVICE_URL")
+    if not embedding_service_url:
+        logging.error("EMBEDDING_SERVICE_URL environment variable not set.")
+        return None
+
+    try:
+        token_url = f"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={embedding_service_url}"
+        token_response = requests.get(token_url, headers={"Metadata-Flavor": "Google"})
+        token = token_response.text
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        payload = {"text": query, "embedding_types": ["semantic_query"]}
+        logging.info(f"Sending embedding request for query: {query}")
+        response = requests.post(embedding_service_url, json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            all_embeddings = response.json().get("embeddings")
+            if all_embeddings and isinstance(all_embeddings, dict):
+                return all_embeddings.get("semantic_query", [[]])[0]
+            else:
+                logging.warning(f"Embeddings not found or invalid in response for query: {query}. Full response: {response.text}")
+                return None
+        else:
+            logging.error(f"Embedding service returned a client error ({response.status_code}) for query {query}: {response.text}")
+            response.raise_for_status()
+            return None
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error calling embedding service for query {query}: {e}")
+        return None
 
 def initialize_clients():
     """Initializes all external clients."""
-    global llm, spanner_database, embedding_model # Update global variables
+    global llm, spanner_database
 
     try:
         logging.info("Initializing global clients...")
@@ -41,10 +75,6 @@ def initialize_clients():
         logging.info("Initializing Vertex AI...")
         llm = VertexAI(model_name="gemini-2.5-flash", location=LOCATION)
         logging.info("Vertex AI LLM client initialized successfully.")
-
-        # Initialize Vertex AI Embeddings
-        embedding_model = VertexAIEmbeddings(model_name="text-embedding-004", location=LOCATION) # Using a common embedding model
-        logging.info("Vertex AI Embeddings client initialized successfully.")
 
         logging.info("All global clients initialized successfully.")
     except Exception as e:
@@ -94,7 +124,9 @@ def query_engine(request):
         query = request_json["query"]
 
         # 1. Generate embedding for the user query
-        query_embedding = embedding_model.embed_query(query)
+        query_embedding = get_query_embedding(query)
+        if not query_embedding:
+            return "Failed to generate query embedding", 500
 
         # 2. Fetch community summaries and embeddings from Spanner Graph
         # Assuming nodes (e.g., 'Community') have 'summary' and 'embedding' properties
