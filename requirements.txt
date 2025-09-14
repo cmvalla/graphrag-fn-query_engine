@@ -1,5 +1,6 @@
-functions-framework==3.*
-google-cloud-spanner==3.*
-langchain-google-vertexai==0.*
-requests==2.*
-scikit-learn==1.*
+functions-framework
+google-cloud-spanner
+langchain-google-vertexai
+requests
+scikit-learn
+google-cloud-logging
