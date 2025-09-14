@@ -1,6 +1,6 @@
 import os
 import json
-import functions_framework
+from flask import Flask, request, jsonify
 import google.cloud.logging
 import logging
 from google.cloud import spanner
@@ -15,6 +15,9 @@ import time
 logging_client = google.cloud.logging.Client()
 logging_client.setup_logging()
 logging.basicConfig(level=logging.INFO)
+
+# Create Flask app instance
+app = Flask(__name__)
 
 # --- Global Clients (initialized within the function) ---
 llm = None
@@ -111,8 +114,8 @@ FINAL_ANSWER_PROMPT = PromptTemplate(
     """
 )
 
-@functions_framework.http
-def query_engine(request):
+@app.route('/', methods=['POST'])
+def query_engine():
     """
     Answers a global sensemaking query using the community summaries from Spanner Graph.
     """
@@ -121,14 +124,14 @@ def query_engine(request):
 
         request_json = request.get_json(silent=True)
         if not request_json or "query" not in request_json:
-            return "Bad Request: Invalid JSON or missing query", 400
+            return jsonify({"error": "Bad Request: Invalid JSON or missing query"}), 400
 
         query = request_json["query"]
 
         # 1. Generate embedding for the user query
         query_embedding = get_query_embedding(query)
         if not query_embedding:
-            return "Failed to generate query embedding", 500
+            return jsonify({"error": "Failed to generate query embedding"}), 500
 
         # 2. Fetch community summaries and embeddings from Spanner Graph
         # Assuming nodes (e.g., 'Community') have 'summary' and 'embedding' properties
@@ -171,7 +174,7 @@ def query_engine(request):
 
         if not valid_entities:
             logging.warning("No valid entity embeddings found for similarity search. Cannot perform semantic search.")
-            return "No relevant information found.", 200 # Or handle as appropriate
+            return jsonify({"message": "No relevant information found."}), 200 # Or handle as appropriate
 
         entity_embeddings = [entity["embedding"] for entity in valid_entities]
         
@@ -221,14 +224,15 @@ def query_engine(request):
         # 5. Generate final answer
         if not partial_answers:
             logging.warning("No partial answers generated. Returning default response.")
-            return "No relevant information found to answer your query.", 200
+            return jsonify({"message": "No relevant information found to answer your query.
+"}), 200
 
         partial_answers_str = "\n".join(partial_answers)
         prompt = FINAL_ANSWER_PROMPT.format(query=query, partial_answers=partial_answers_str)
         final_answer = llm.invoke(prompt)
 
-        return final_answer, 200
+        return jsonify({"answer": final_answer}), 200
 
     except Exception as e:
         logging.error(f'An error occurred in the query engine: {e}', exc_info=True)
-        return "Internal Server Error", 500
+        return jsonify({"error": "Internal Server Error"}), 500
