@@ -24,7 +24,6 @@ llm = None
 spanner_database = None
 
 
-
 def get_query_embedding(query: str):
     """Generates an embedding for a given query by calling the graphrag-embedding service."""
     embedding_service_url = os.environ.get("EMBEDDING_SERVICE_URL")
@@ -145,8 +144,7 @@ def query_engine():
         RETURN n.id AS id, n.type AS type, n.properties AS properties, n.embedding AS embedding
         """
         
-        graph = spanner_database.graph('my_graph') # Confirmed graph name from spanner.tf
-        with graph.snapshot() as snapshot:
+        with spanner_database.snapshot() as snapshot:
             results = snapshot.execute_sql(gql_query)
             all_entities_data = []
             for row in results:
@@ -176,7 +174,7 @@ def query_engine():
 
         if not valid_entities:
             logging.warning("No valid entity embeddings found for similarity search. Cannot perform semantic search.")
-            return jsonify({"message": "No relevant information found."}), 200 # Or handle as appropriate
+            return jsonify({"message": "No relevant information found."} ), 200 # Or handle as appropriate
 
         entity_embeddings = [entity["embedding"] for entity in valid_entities]
         
