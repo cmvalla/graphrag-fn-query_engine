@@ -5,7 +5,7 @@ import google.cloud.logging
 import logging
 from google.cloud import spanner
 from google.cloud.spanner_v1.types import ExecuteSqlRequest
-from google.cloud.spanner_v1.enums import QueryMode
+
 from langchain_google_vertexai import VertexAI
 from langchain.prompts import PromptTemplate
 import requests
@@ -16,7 +16,7 @@ import time
 # Setup structured logging
 logging_client = google.cloud.logging.Client()
 logging_client.setup_logging()
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 # Create Flask app instance
 app = Flask(__name__)
@@ -149,7 +149,7 @@ def query_engine():
         with spanner_database.snapshot() as snapshot:
             request = ExecuteSqlRequest(
                 sql=gql_query,
-                query_mode=QueryMode.PLAN,
+                query_mode=1,
             )
             results = snapshot.execute_sql(request)
             all_entities_data = []
