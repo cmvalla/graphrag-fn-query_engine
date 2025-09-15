@@ -141,6 +141,7 @@ def query_engine():
         # Fetch all entities (including Class, Instance, and Community) and their embeddings
         gql_query = "SELECT 1"
         
+        logging.info("Executing query: " + gql_query)
         with spanner_database.snapshot() as snapshot:
             results = snapshot.execute_sql(gql_query)
             all_entities_data = []
