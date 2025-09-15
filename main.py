@@ -148,11 +148,7 @@ def query_engine():
         """
         
         with spanner_database.snapshot() as snapshot:
-            spanner_request = ExecuteSqlRequest(
-                sql=gql_query,
-                query_mode=1,
-            )
-            results = snapshot.execute_sql(spanner_request)
+            results = snapshot.execute_sql(gql_query, query_mode=1)
             all_entities_data = []
             for row in results:
                 entity_id = row[0]
