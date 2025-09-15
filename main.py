@@ -143,21 +143,22 @@ def query_engine():
         # Example GQL query (adjust table/column names as per your Spanner Graph schema)
         # Fetch all entities (including Class, Instance, and Community) and their embeddings
         gql_query = """
-        SELECT
-            n.Eid AS id,
-            n.Type AS type,
-            n.Properties AS properties,
+        GRAPH my_graph
+        MATCH (n)
+        RETURN
+            CASE
+                WHEN n IS Entities THEN n.Eid
+                WHEN n IS Communities THEN n.CommunityId
+            END AS id,
+            CASE
+                WHEN n IS Entities THEN n.Type
+                WHEN n IS Communities THEN 'Community'
+            END AS type,
+            CASE
+                WHEN n IS Entities THEN n.Properties
+                WHEN n IS Communities THEN JSON_OBJECT('summary', n.Summary)
+            END AS properties,
             n.Embedding AS embedding
-        FROM
-            my_graph.Entities AS n
-        UNION ALL
-        SELECT
-            c.CommunityId AS id,
-            'Community' AS type,
-            JSON_OBJECT('summary', c.Summary) AS properties,
-            c.Embedding AS embedding
-        FROM
-            my_graph.Communities AS c
         """
         
         with spanner_database.snapshot() as snapshot:
