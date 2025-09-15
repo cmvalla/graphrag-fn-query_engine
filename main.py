@@ -147,16 +147,16 @@ def query_engine():
         MATCH (n)
         RETURN
             CASE
-                WHEN n IS Entities THEN n.Eid
-                WHEN n IS Communities THEN n.CommunityId
+                WHEN TYPE(n) = 'Entities' THEN n.Eid
+                WHEN TYPE(n) = 'Communities' THEN n.CommunityId
             END AS id,
             CASE
-                WHEN n IS Entities THEN n.Type
-                WHEN n IS Communities THEN 'Community'
+                WHEN TYPE(n) = 'Entities' THEN n.Type
+                WHEN TYPE(n) = 'Communities' THEN 'Community'
             END AS type,
             CASE
-                WHEN n IS Entities THEN n.Properties
-                WHEN n IS Communities THEN JSON_OBJECT('summary', n.Summary)
+                WHEN TYPE(n) = 'Entities' THEN n.Properties
+                WHEN TYPE(n) = 'Communities' THEN JSON_OBJECT('summary', n.Summary)
             END AS properties,
             n.Embedding AS embedding
         """
