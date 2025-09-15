@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 import google.cloud.logging
 import logging
 from google.cloud import spanner
-from google.cloud.spanner_v1.types import ExecuteSqlRequest
+
 
 from langchain_google_vertexai import VertexAI
 from langchain.prompts import PromptTemplate
@@ -125,7 +125,7 @@ def query_engine():
     try:
 
 
-        request_json = request.get_json(silent=True)
+        request_json = flask.request.get_json(silent=True)
         if not request_json or "query" not in request_json:
             return jsonify({"error": "Bad Request: Invalid JSON or missing query"}), 400
 
@@ -147,11 +147,11 @@ def query_engine():
         """
         
         with spanner_database.snapshot() as snapshot:
-            request = ExecuteSqlRequest(
+            spanner_request = ExecuteSqlRequest(
                 sql=gql_query,
                 query_mode=1,
             )
-            results = snapshot.execute_sql(request)
+            results = snapshot.execute_sql(spanner_request)
             all_entities_data = []
             for row in results:
                 entity_id = row[0]
