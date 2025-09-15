@@ -139,9 +139,11 @@ def query_engine():
         # and that 'embedding' is stored as an ARRAY<FLOAT64>
         # Example GQL query (adjust table/column names as per your Spanner Graph schema)
         # Fetch all entities (including Class, Instance, and Community) and their embeddings
-        gql_query = "SELECT 1"
+        gql_query = """
+        MATCH (n)
+        RETURN n.id AS id, n.type AS type, n.properties AS properties, n.embedding AS embedding
+        """
         
-        logging.info("Executing query: " + gql_query)
         with spanner_database.snapshot() as snapshot:
             results = snapshot.execute_sql(gql_query)
             all_entities_data = []
