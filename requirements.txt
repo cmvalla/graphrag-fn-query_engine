@@ -1,5 +1,5 @@
 functions-framework
-google-cloud-spanner
+google-cloud-spanner==3.20.0
 langchain-google-vertexai
 requests
 scikit-learn
