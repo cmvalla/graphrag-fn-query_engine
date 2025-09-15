@@ -125,7 +125,7 @@ def query_engine():
     try:
 
 
-        request_json = flask.request.get_json(silent=True)
+        request_json = request.get_json(silent=True)
         if not request_json or "query" not in request_json:
             return jsonify({"error": "Bad Request: Invalid JSON or missing query"}), 400
 
