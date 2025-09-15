@@ -1,8 +1,9 @@
 functions-framework
-google-cloud-spanner==3.20.0
+google-cloud-spanner
 langchain-google-vertexai
 requests
 scikit-learn
 google-cloud-logging
 langchain
 langchain-core
+flask
