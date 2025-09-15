@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import google.cloud.logging
 import logging
 from google.cloud import spanner
+from google.cloud.spanner_v1.types import ExecuteSqlRequest, QueryMode
 from langchain_google_vertexai import VertexAI
 from langchain.prompts import PromptTemplate
 import requests
@@ -145,7 +146,11 @@ def query_engine():
         """
         
         with spanner_database.snapshot() as snapshot:
-            results = snapshot.execute_sql(gql_query)
+            request = ExecuteSqlRequest(
+                sql=gql_query,
+                query_mode=QueryMode.PLAN,
+            )
+            results = snapshot.execute_sql(request)
             all_entities_data = []
             for row in results:
                 entity_id = row[0]
