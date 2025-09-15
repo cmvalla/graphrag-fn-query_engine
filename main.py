@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import google.cloud.logging
 import logging
 from google.cloud import spanner
+from google.cloud.spanner_v1.types import ExecuteSqlRequest
 
 
 from langchain_google_vertexai import VertexAI
