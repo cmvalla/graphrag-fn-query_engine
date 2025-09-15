@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, request, jsonify
+import flask, jsonify, request, Flask
 import google.cloud.logging
 import logging
 from google.cloud import spanner
