@@ -149,7 +149,7 @@ def query_engine():
             n.Properties AS properties,
             n.Embedding AS embedding
         FROM
-            my_graph.Entities AS n
+            GRAPH my_graph MATCH (n:Entities)
         UNION ALL
         SELECT
             c.CommunityId AS id,
@@ -157,7 +157,7 @@ def query_engine():
             JSON_OBJECT('summary', c.Summary) AS properties,
             c.Embedding AS embedding
         FROM
-            my_graph.Communities AS c
+            GRAPH my_graph MATCH (c:Communities)
         """
         
         with spanner_database.snapshot() as snapshot:
