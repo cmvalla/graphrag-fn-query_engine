@@ -7,3 +7,4 @@ google-cloud-logging
 langchain
 langchain-core
 flask
+google-auth

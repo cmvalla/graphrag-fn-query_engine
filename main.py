@@ -6,6 +6,10 @@ import logging
 from google.cloud import spanner
 from google.cloud.spanner_v1.types import ExecuteSqlRequest
 
+# Added for local authentication
+import google.auth
+from google.oauth2 import id_token
+
 
 from langchain_google_vertexai import VertexAI
 from langchain.prompts import PromptTemplate
@@ -35,9 +39,9 @@ def get_query_embedding(query: str):
         return None
 
     try:
-        token_url = f"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={embedding_service_url}"
-        token_response = requests.get(token_url, headers={"Metadata-Flavor": "Google"})
-        token = token_response.text
+        # Use google-auth to get an ID token. This works for both local ADC and GCP service accounts.
+        auth_req = google.auth.transport.requests.Request()
+        token = id_token.fetch_id_token(auth_req, embedding_service_url)
         headers = {"Authorization": f"Bearer {token}"}
         
         payload = {"text": query, "embedding_types": ["semantic_query"]}
@@ -57,7 +61,7 @@ def get_query_embedding(query: str):
             return None
 
     except requests.exceptions.RequestException as e:
-        logging.error(f"Error calling embedding service for query {query}: {e}")
+        logging.error(f"Error calling embedding service for query {query}: {e}", exc_info=True)
         return None
 
 def initialize_clients():
@@ -146,18 +150,18 @@ def query_engine():
         SELECT
             n.Eid AS id,
             n.Type AS type,
-            n.Properties AS properties,
-            n.Embedding AS embedding
+            n.Properties,
+            n.Embedding
         FROM
-            GRAPH my_graph MATCH (n:Entities)
+            Entities n
         UNION ALL
         SELECT
             c.CommunityId AS id,
             'Community' AS type,
-            JSON_OBJECT('summary', c.Summary) AS properties,
-            c.Embedding AS embedding
+            PARSE_JSON(CONCAT('{{"summary": "', c.Summary, '"}}')) AS properties,
+            c.Embedding
         FROM
-            GRAPH my_graph MATCH (c:Communities)
+            Communities c
         """
         
         with spanner_database.snapshot() as snapshot:
