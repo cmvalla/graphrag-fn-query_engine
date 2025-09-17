@@ -180,6 +180,8 @@ def query_engine():
                     "embedding": entity_embedding
                 })
 
+        logging.info(f"Found {len(all_entities_data)} entities in Spanner.")
+
         # 3. Perform similarity search to find top N relevant entities (Class, Instance, Community)
         # Calculate cosine similarity between query embedding and entity embeddings
         from sklearn.metrics.pairwise import cosine_similarity # This will require adding sklearn to requirements.txt
