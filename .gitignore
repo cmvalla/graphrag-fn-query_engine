@@ -1,0 +1,11 @@
+terraform/terraform.tfvars
+terraform/.terraform.lock.hcl
+.terraform
+.venv
+venv
+__pycache__/**
+tests/__pycache__/**
+tests/__pycache__/*.py
+credentials.json
+venv
+**/__pycache__
