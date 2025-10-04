@@ -37,6 +37,7 @@ def get_query_embedding(query: str):
     if not embedding_service_url:
         logging.error("EMBEDDING_SERVICE_URL environment variable not set.")
         return None
+    logging.debug(f"Using embedding service URL: {embedding_service_url}")
 
     try:
         # Use google-auth to get an ID token. This works for both local ADC and GCP service accounts.
@@ -45,10 +46,11 @@ def get_query_embedding(query: str):
         headers = {"Authorization": f"Bearer {token}"}
         
         payload = {"text": query, "embedding_types": ["semantic_query"]}
-        logging.info(f"Sending embedding request for query: {query}")
+        logging.info(f"Sending embedding request for query: {query} with payload: {payload}")
         response = requests.post(embedding_service_url, json=payload, headers=headers)
         
         if response.status_code == 200:
+            logging.info(f"Embedding service returned status 200 for query: {query}")
             all_embeddings = response.json().get("embeddings")
             if all_embeddings and isinstance(all_embeddings, dict):
                 return all_embeddings.get("semantic_query", [[]])[0]
@@ -128,18 +130,22 @@ def query_engine():
     Answers a global sensemaking query using the community summaries from Spanner Graph.
     """
     try:
-
+        logging.info("Received request in query_engine.")
 
         request_json = request.get_json(silent=True)
         if not request_json or "query" not in request_json:
+            logging.error("Bad Request: Invalid JSON or missing query in request.")
             return jsonify({"error": "Bad Request: Invalid JSON or missing query"}), 400
 
         query = request_json["query"]
+        logging.info(f"Processing query: {query}")
 
         # 1. Generate embedding for the user query
         query_embedding = get_query_embedding(query)
         if not query_embedding:
+            logging.error(f"Failed to generate query embedding for query: {query}")
             return jsonify({"error": "Failed to generate query embedding"}), 500
+        logging.info(f"Successfully generated query embedding for query: {query}")
 
         # 2. Fetch community summaries and embeddings from Spanner Graph
         # Assuming nodes (e.g., 'Community') have 'summary' and 'embedding' properties
