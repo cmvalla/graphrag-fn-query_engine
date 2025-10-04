@@ -51,14 +51,11 @@ def get_query_embedding(query: str):
         
         if response.status_code == 200:
             logging.info(f"Embedding service returned status 200 for query: {query}")
-            all_embeddings = response.json().get("embeddings")
-            if all_embeddings and isinstance(all_embeddings, dict):
-                semantic_query_embedding = all_embeddings.get("semantic_query")
-                if semantic_query_embedding and isinstance(semantic_query_embedding, list) and len(semantic_query_embedding) > 0:
-                    return semantic_query_embedding[0]
-                else:
-                    logging.warning(f"Semantic query embedding not found or invalid in response for query: {query}. Full response: {response.json()}")
-                    return None
+            if response.json().get("embedding") and isinstance(response.json().get("embedding"), list) and len(response.json().get("embedding")) > 0:
+                return response.json().get("embedding")
+            else:
+                logging.warning(f"Embedding not found or invalid in response for query: {query}. Full response: {response.json()}")
+                return None
         else:
             logging.error(f"Embedding service returned a client error ({response.status_code}) for query {query}: {response.text}")
             response.raise_for_status()
