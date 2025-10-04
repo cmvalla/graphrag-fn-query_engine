@@ -55,7 +55,7 @@ def get_query_embedding(query: str):
             if all_embeddings and isinstance(all_embeddings, dict):
                 return all_embeddings.get("semantic_query", [[]])[0]
             else:
-                logging.warning(f"Embeddings not found or invalid in response for query: {query}. Full response: {response.text}")
+                logging.warning(f"Embeddings not found or invalid in response for query: {query}. Full response: {response.json()}")
                 return None
         else:
             logging.error(f"Embedding service returned a client error ({response.status_code}) for query {query}: {response.text}")
