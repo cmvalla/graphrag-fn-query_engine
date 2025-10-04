@@ -141,6 +141,7 @@ def query_engine():
 
         # 1. Generate embedding for the user query
         query_embedding = get_query_embedding(query)
+        logging.debug(f"Value of query_embedding: {query_embedding}")
         if not query_embedding:
             logging.error(f"Failed to generate query embedding for query: {query}")
             return jsonify({"error": "Failed to generate query embedding"}), 500
