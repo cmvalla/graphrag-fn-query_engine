@@ -178,7 +178,7 @@ def query_engine():
             for row in results:
                 entity_id = row[0]
                 entity_type = row[1]
-                entity_properties = json.loads(row[2]) if row[2] else {} # Properties are JSON
+                entity_properties = row[2] if row[2] else {} # Properties are JSON
                 entity_embedding = list(row[3]) if row[3] else None # Embedding is ARRAY<FLOAT64>
                 
                 all_entities_data.append({
