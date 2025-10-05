@@ -213,6 +213,8 @@ def query_engine():
                 valid_entities.append(entity)
             else:
                 logging.warning(f"Entity {entity.get('id')} has invalid or missing embedding: {entity.get('embedding')}")
+        
+        logging.info(f"Found {len(valid_entities)} valid entities with embeddings.")
 
         if not valid_entities:
             logging.warning("No valid entity embeddings found for similarity search. Cannot perform semantic search.")
@@ -231,6 +233,8 @@ def query_engine():
         top_n_entities = [valid_entities[i] for i in top_n_indices]
         
         logging.info(f"Top {top_n} entities for query '{query}': {[entity['id'] for entity in top_n_entities]}")
+        for i, entity in enumerate(top_n_entities):
+            logging.info(f"  Top {i+1}: Entity ID: {entity['id']}, Type: {entity['type']}, Similarity: {similarities[top_n_indices[i]]}")
 
 
         # 4. Generate partial answers for top N relevant entities
@@ -254,6 +258,8 @@ def query_engine():
             else:
                 logging.warning(f"Unknown entity type {entity_type} for entity {entity_id}. Using full properties.")
                 summary = json.dumps(entity_properties)
+            
+            logging.info(f"Extracted summary for entity {entity_id}: '{summary[:100]}...'")
 
             if not summary:
                 logging.warning(f"No meaningful summary could be extracted for entity {entity_id}. Skipping partial answer generation for this entity.")
@@ -261,6 +267,7 @@ def query_engine():
 
             prompt = PARTIAL_ANSWER_PROMPT.format(query=query, summary=summary)
             partial_answer = llm.invoke(prompt)
+            logging.info(f"Generated partial answer for entity {entity_id}: '{partial_answer[:100]}...'")
             partial_answers.append(partial_answer)
 
         # 5. Generate final answer
