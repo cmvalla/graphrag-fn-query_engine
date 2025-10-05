@@ -9,6 +9,7 @@ from google.cloud.spanner_v1.types import ExecuteSqlRequest
 # Added for local authentication
 import google.auth
 from google.oauth2 import id_token
+import uuid
 
 
 from langchain_google_vertexai import VertexAI
@@ -32,7 +33,7 @@ spanner_database = None
 
 
 def get_query_embedding(query: str):
-    """Generates an embedding for a given query by calling the graphrag-embedding service."""
+    """Generates an embedding for a given query by calling the graphrag-embedding service, following the worker's pattern."""
     embedding_service_url = os.environ.get("EMBEDDING_SERVICE_URL")
     if not embedding_service_url:
         logging.error("EMBEDDING_SERVICE_URL environment variable not set.")
@@ -40,21 +41,32 @@ def get_query_embedding(query: str):
     logging.debug(f"Using embedding service URL: {embedding_service_url}")
 
     try:
-        # Use google-auth to get an ID token. This works for both local ADC and GCP service accounts.
+        # Use google-auth to get an ID token.
         auth_req = google.auth.transport.requests.Request()
         token = id_token.fetch_id_token(auth_req, embedding_service_url)
         headers = {"Authorization": f"Bearer {token}"}
         
-        payload = {"text": query, "embedding_types": ["semantic_query"]}
+        # The payload now mirrors the worker's, sending a list of texts.
+        payload = {
+            "texts": [query], 
+            "embedding_types": ["semantic_query"],
+            "invocation_id": f"query-engine-{uuid.uuid4().hex}"
+        }
         logging.info(f"Sending embedding request for query: {query} with payload: {payload}")
         response = requests.post(embedding_service_url, json=payload, headers=headers)
         
         if response.status_code == 200:
             logging.info(f"Embedding service returned status 200 for query: {query}")
-            if response.json().get("embedding") and isinstance(response.json().get("embedding"), list) and len(response.json().get("embedding")) > 0:
-                return response.json().get("embedding")
+            embeddings_response = response.json()
+            
+            # Handle the new response format { "embeddings": { "semantic_query": [...] } }
+            semantic_query_embedding = embeddings_response.get("embeddings", {}).get("semantic_query")
+            
+            if semantic_query_embedding and isinstance(semantic_query_embedding, list) and len(semantic_query_embedding) > 0:
+                # The result is a list of embeddings, we need the first one.
+                return semantic_query_embedding[0]
             else:
-                logging.warning(f"Embedding not found or invalid in response for query: {query}. Full response: {response.json()}")
+                logging.warning(f"Semantic query embedding not found or invalid in response for query: {query}. Full response: {embeddings_response}")
                 return None
         else:
             logging.error(f"Embedding service returned a client error ({response.status_code}) for query {query}: {response.text}")
